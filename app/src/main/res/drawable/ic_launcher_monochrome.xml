@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A white page of redacted text lines, traced from the logo artwork. -->
+<!-- Single-tint silhouette for themed icons: the page with the text lines
+     cut out, so launchers can tint it however they like. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,10 +8,9 @@
     android:viewportHeight="108">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34.6,34h38.8a0.6,0.6 0 0 1 0.6,0.6v38.8a0.6,0.6 0 0 1 -0.6,0.6h-38.8a0.6,0.6 0 0 1 -0.6,-0.6v-38.8a0.6,0.6 0 0 1 0.6,-0.6z" />
-    <path
-        android:fillColor="#000000"
-        android:pathData="M36.7,36h13.9v2.5h-13.9z
+        android:fillType="evenOdd"
+        android:pathData="M34.6,34h38.8a0.6,0.6 0 0 1 0.6,0.6v38.8a0.6,0.6 0 0 1 -0.6,0.6h-38.8a0.6,0.6 0 0 1 -0.6,-0.6v-38.8a0.6,0.6 0 0 1 0.6,-0.6z
+M36.7,36h13.9v2.5h-13.9z
 M36.7,41.7h34.4v1.5h-34.4z
 M36.7,44.2h34.4v1.5h-34.4z
 M36.7,46.8h21.4v1.5h-21.4z

@@ -183,7 +183,7 @@ fun SettingsScreen(
 
             SectionHeader("About")
             Text(
-                text = "Elendheim Notes 2.0",
+                text = "Elendheim Notes 2.1",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
