@@ -16,6 +16,9 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOff
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.elendheim.notes.data.Folder
 import com.elendheim.notes.data.Note
+import com.elendheim.notes.ui.theme.NoteTagColors
+import com.elendheim.notes.ui.theme.parseTagColor
 
 @Composable
 fun NameDialog(
@@ -126,6 +131,7 @@ fun NoteActionsSheet(
     note: Note,
     onPinToggle: () -> Unit,
     onMove: () -> Unit,
+    onColor: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -157,6 +163,11 @@ fun NoteActionsSheet(
                 onClick = onMove
             )
             SheetAction(
+                icon = Icons.Outlined.Palette,
+                label = "Color tag",
+                onClick = onColor
+            )
+            SheetAction(
                 icon = Icons.Outlined.Delete,
                 label = "Delete",
                 onClick = onDelete,
@@ -168,9 +179,51 @@ fun NoteActionsSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun ColorPickerSheet(
+    current: String?,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+        ) {
+            Text(
+                text = "Color tag",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ColorDot(color = null, selected = current == null, onClick = { onSelect(null) })
+                NoteTagColors.forEach { (hex, _) ->
+                    ColorDot(
+                        color = parseTagColor(hex),
+                        selected = current == hex,
+                        onClick = { onSelect(hex) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun FolderActionsSheet(
     folderName: String,
+    locked: Boolean,
     onRename: () -> Unit,
+    onToggleLock: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -195,6 +248,11 @@ fun FolderActionsSheet(
                 icon = Icons.Outlined.DriveFileRenameOutline,
                 label = "Rename",
                 onClick = onRename
+            )
+            SheetAction(
+                icon = if (locked) Icons.Outlined.LockOpen else Icons.Outlined.Lock,
+                label = if (locked) "Remove lock" else "Lock folder",
+                onClick = onToggleLock
             )
             SheetAction(
                 icon = Icons.Outlined.Delete,

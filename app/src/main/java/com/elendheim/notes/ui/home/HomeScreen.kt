@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -39,10 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.elendheim.notes.data.Note
 import com.elendheim.notes.ui.NotesViewModel
+import com.elendheim.notes.ui.components.ColorPickerSheet
 import com.elendheim.notes.ui.components.ConfirmDialog
 import com.elendheim.notes.ui.components.EmptyState
 import com.elendheim.notes.ui.components.FolderActionsSheet
@@ -52,6 +56,9 @@ import com.elendheim.notes.ui.components.NameDialog
 import com.elendheim.notes.ui.components.NoteActionsSheet
 import com.elendheim.notes.ui.components.NoteCard
 import com.elendheim.notes.ui.components.SectionLabel
+import com.elendheim.notes.ui.components.SortMenuButton
+import com.elendheim.notes.ui.components.SwipeableNoteCard
+import com.elendheim.notes.ui.promptUnlock
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,21 +66,25 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     viewModel: NotesViewModel,
     onOpenNote: (Long) -> Unit,
-    onOpenFolder: (Long) -> Unit
+    onOpenFolder: (Long) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val folders by viewModel.folders.collectAsStateWithLifecycle()
     val allFolders by viewModel.allFolders.collectAsStateWithLifecycle()
     val notes by viewModel.unfiledNotes.collectAsStateWithLifecycle()
+    val homeSort by viewModel.homeSort.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val activity = LocalContext.current as? FragmentActivity
 
     var searching by rememberSaveable { mutableStateOf(false) }
     var actionNote by remember { mutableStateOf<Note?>(null) }
     var movingNote by remember { mutableStateOf<Note?>(null) }
+    var coloringNote by remember { mutableStateOf<Note?>(null) }
     var showNewFolder by remember { mutableStateOf(false) }
     var newFolderForNote by remember { mutableStateOf<Note?>(null) }
     var actionFolderId by remember { mutableStateOf<Long?>(null) }
@@ -94,6 +105,14 @@ fun HomeScreen(
         }
     }
 
+    fun openFolderGated(folderId: Long, locked: Boolean) {
+        if (!locked) {
+            onOpenFolder(folderId)
+        } else if (activity != null) {
+            promptUnlock(activity, "Unlock folder") { onOpenFolder(folderId) }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
@@ -107,6 +126,7 @@ fun HomeScreen(
                     scrolledContainerColor = MaterialTheme.colorScheme.background
                 ),
                 actions = {
+                    SortMenuButton(current = homeSort) { viewModel.setSort("home", it) }
                     IconButton(onClick = { showNewFolder = true }) {
                         Icon(Icons.Outlined.CreateNewFolder, contentDescription = "New folder")
                     }
@@ -118,6 +138,9 @@ fun HomeScreen(
                             if (searching) Icons.Outlined.Close else Icons.Outlined.Search,
                             contentDescription = if (searching) "Close search" else "Search"
                         )
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Outlined.Settings, contentDescription = "Settings")
                     }
                 }
             )
@@ -181,7 +204,8 @@ fun HomeScreen(
                         FolderCard(
                             name = entry.folder.name,
                             noteCount = entry.noteCount,
-                            onClick = { onOpenFolder(entry.folder.id) },
+                            locked = entry.folder.locked,
+                            onClick = { openFolderGated(entry.folder.id, entry.folder.locked) },
                             onLongPress = { actionFolderId = entry.folder.id },
                             modifier = Modifier.animateItem()
                         )
@@ -198,10 +222,11 @@ fun HomeScreen(
                     item(key = "empty-notes") { EmptyState("No loose notes.") }
                 } else {
                     items(notes, key = { "n${it.id}" }) { note ->
-                        NoteCard(
+                        SwipeableNoteCard(
                             note = note,
                             onClick = { onOpenNote(note.id) },
                             onLongPress = { actionNote = note },
+                            onDelete = { deleteWithUndo(note) },
                             modifier = Modifier.animateItem()
                         )
                     }
@@ -219,6 +244,10 @@ fun HomeScreen(
             },
             onMove = {
                 movingNote = note
+                actionNote = null
+            },
+            onColor = {
+                coloringNote = note
                 actionNote = null
             },
             onDelete = {
@@ -242,6 +271,17 @@ fun HomeScreen(
                 movingNote = null
             },
             onDismiss = { movingNote = null }
+        )
+    }
+
+    coloringNote?.let { note ->
+        ColorPickerSheet(
+            current = note.color,
+            onSelect = { chosen ->
+                viewModel.setNoteColor(note, chosen)
+                coloringNote = null
+            },
+            onDismiss = { coloringNote = null }
         )
     }
 
@@ -276,9 +316,26 @@ fun HomeScreen(
         } else {
             FolderActionsSheet(
                 folderName = entry.folder.name,
+                locked = entry.folder.locked,
                 onRename = {
                     renamingFolderId = folderId
                     actionFolderId = null
+                },
+                onToggleLock = {
+                    actionFolderId = null
+                    if (entry.folder.locked) {
+                        if (activity != null) {
+                            promptUnlock(activity, "Remove folder lock") {
+                                viewModel.setFolderLocked(folderId, false)
+                            }
+                        }
+                    } else if (activity != null && com.elendheim.notes.ui.canUseDeviceLock(activity)) {
+                        viewModel.setFolderLocked(folderId, true)
+                    } else {
+                        scope.launch {
+                            snackbar.showSnackbar("Set up a screen lock or fingerprint first")
+                        }
+                    }
                 },
                 onDelete = {
                     deletingFolderId = folderId
@@ -318,5 +375,4 @@ fun HomeScreen(
             onDismiss = { deletingFolderId = null }
         )
     }
-
 }

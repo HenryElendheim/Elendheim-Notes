@@ -32,16 +32,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.elendheim.notes.data.Note
+import com.elendheim.notes.data.SortMode
 import com.elendheim.notes.ui.NotesViewModel
+import com.elendheim.notes.ui.canUseDeviceLock
+import com.elendheim.notes.ui.components.ColorPickerSheet
 import com.elendheim.notes.ui.components.ConfirmDialog
 import com.elendheim.notes.ui.components.EmptyState
 import com.elendheim.notes.ui.components.MoveToFolderSheet
 import com.elendheim.notes.ui.components.NameDialog
 import com.elendheim.notes.ui.components.NoteActionsSheet
-import com.elendheim.notes.ui.components.NoteCard
+import com.elendheim.notes.ui.components.SortMenuButton
+import com.elendheim.notes.ui.components.SwipeableNoteCard
+import com.elendheim.notes.ui.promptUnlock
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,16 +60,21 @@ fun FolderScreen(
     onBack: () -> Unit
 ) {
     val folder by viewModel.folderById(folderId).collectAsStateWithLifecycle(initialValue = null)
-    val notes by viewModel.notesInFolder(folderId).collectAsStateWithLifecycle(initialValue = emptyList())
+    val notes by viewModel.sortedNotesInFolder(folderId)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val sort by viewModel.sortFor("f$folderId")
+        .collectAsStateWithLifecycle(initialValue = SortMode.EDITED)
     val allFolders by viewModel.allFolders.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val activity = LocalContext.current as? FragmentActivity
 
     var menuOpen by remember { mutableStateOf(false) }
     var actionNote by remember { mutableStateOf<Note?>(null) }
     var movingNote by remember { mutableStateOf<Note?>(null) }
+    var coloringNote by remember { mutableStateOf<Note?>(null) }
     var newFolderForNote by remember { mutableStateOf<Note?>(null) }
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -97,6 +109,7 @@ fun FolderScreen(
                     }
                 },
                 actions = {
+                    SortMenuButton(current = sort) { viewModel.setSort("f$folderId", it) }
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Outlined.MoreVert, contentDescription = "Folder options")
                     }
@@ -106,6 +119,28 @@ fun FolderScreen(
                             onClick = {
                                 menuOpen = false
                                 renaming = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(if (folder?.locked == true) "Remove lock" else "Lock folder")
+                            },
+                            onClick = {
+                                menuOpen = false
+                                val locked = folder?.locked == true
+                                if (locked) {
+                                    if (activity != null) {
+                                        promptUnlock(activity, "Remove folder lock") {
+                                            viewModel.setFolderLocked(folderId, false)
+                                        }
+                                    }
+                                } else if (activity != null && canUseDeviceLock(activity)) {
+                                    viewModel.setFolderLocked(folderId, true)
+                                } else {
+                                    scope.launch {
+                                        snackbar.showSnackbar("Set up a screen lock or fingerprint first")
+                                    }
+                                }
                             }
                         )
                         DropdownMenuItem(
@@ -142,10 +177,11 @@ fun FolderScreen(
                 item(key = "empty") { EmptyState("This folder is empty.") }
             } else {
                 items(notes, key = { it.id }) { note ->
-                    NoteCard(
+                    SwipeableNoteCard(
                         note = note,
                         onClick = { onOpenNote(note.id) },
                         onLongPress = { actionNote = note },
+                        onDelete = { deleteWithUndo(note) },
                         modifier = Modifier.animateItem()
                     )
                 }
@@ -162,6 +198,10 @@ fun FolderScreen(
             },
             onMove = {
                 movingNote = note
+                actionNote = null
+            },
+            onColor = {
+                coloringNote = note
                 actionNote = null
             },
             onDelete = {
@@ -185,6 +225,17 @@ fun FolderScreen(
                 movingNote = null
             },
             onDismiss = { movingNote = null }
+        )
+    }
+
+    coloringNote?.let { note ->
+        ColorPickerSheet(
+            current = note.color,
+            onSelect = { chosen ->
+                viewModel.setNoteColor(note, chosen)
+                coloringNote = null
+            },
+            onDismiss = { coloringNote = null }
         )
     }
 

@@ -26,6 +26,21 @@ val TextSecondary = Color(0xFF9C9CA8)
 val OnAccent = Color(0xFF1A0F2E)
 val Danger = Color(0xFFE58B8B)
 
+// Muted tag colors for note stripes. Stored as hex strings on the note.
+val NoteTagColors = listOf(
+    "#B79CED" to "Purple",
+    "#8E77BF" to "Violet",
+    "#7FA6D9" to "Blue",
+    "#85B79D" to "Green",
+    "#CBAF87" to "Sand",
+    "#C98B9E" to "Rose",
+    "#8F949E" to "Grey"
+)
+
+fun parseTagColor(hex: String?): Color? = hex?.let {
+    runCatching { Color(android.graphics.Color.parseColor(it)) }.getOrNull()
+}
+
 private val DarkColors = darkColorScheme(
     primary = SoftPurple,
     onPrimary = OnAccent,

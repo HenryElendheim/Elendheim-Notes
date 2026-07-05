@@ -21,11 +21,21 @@ class NotesRepository(private val db: NotesDatabase) {
         notes.insert(note)
     }
 
+    suspend fun pinnedUnlocked(limit: Int): List<Note> = notes.pinnedUnlocked(limit)
+    suspend fun allUnlocked(): List<Note> = notes.allUnlocked()
+    suspend fun allNotes(): List<Note> = notes.allNotes()
+    suspend fun noteExists(title: String, body: String, createdAt: Long): Boolean =
+        notes.countMatching(title, body, createdAt) > 0
+
+    suspend fun insertNote(note: Note): Long = notes.insert(note)
+
     fun foldersWithCounts(): Flow<List<FolderWithCount>> = folders.foldersWithCounts()
     fun folders(): Flow<List<Folder>> = folders.folders()
     fun folderById(id: Long): Flow<Folder?> = folders.folderById(id)
+    suspend fun allFolders(): List<Folder> = folders.allFolders()
 
     suspend fun createFolder(name: String): Long = folders.insert(Folder(name = name.trim()))
     suspend fun renameFolder(id: Long, name: String) = folders.rename(id, name.trim())
+    suspend fun setFolderLocked(id: Long, locked: Boolean) = folders.setLocked(id, locked)
     suspend fun deleteFolder(id: Long) = folders.delete(id)
 }

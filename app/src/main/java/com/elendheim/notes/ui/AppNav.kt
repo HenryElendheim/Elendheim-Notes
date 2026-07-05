@@ -6,7 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,11 +15,23 @@ import androidx.navigation.navArgument
 import com.elendheim.notes.ui.editor.EditorScreen
 import com.elendheim.notes.ui.home.FolderScreen
 import com.elendheim.notes.ui.home.HomeScreen
+import com.elendheim.notes.ui.settings.SettingsScreen
 
 @Composable
-fun AppNav() {
+fun AppNav(
+    viewModel: NotesViewModel,
+    startNoteId: Long? = null,
+    startNewNote: Boolean = false
+) {
     val navController = rememberNavController()
-    val viewModel: NotesViewModel = viewModel(factory = NotesViewModel.Factory)
+
+    // Widget entry points: open a given note, or create a fresh one.
+    LaunchedEffect(startNoteId, startNewNote) {
+        when {
+            startNoteId != null -> navController.navigate("note/$startNoteId")
+            startNewNote -> navController.navigate("note/${viewModel.createNote(null)}")
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -37,7 +49,8 @@ fun AppNav() {
             HomeScreen(
                 viewModel = viewModel,
                 onOpenNote = { id -> navController.navigate("note/$id") },
-                onOpenFolder = { id -> navController.navigate("folder/$id") }
+                onOpenFolder = { id -> navController.navigate("folder/$id") },
+                onOpenSettings = { navController.navigate("settings") }
             )
         }
         composable(
@@ -57,6 +70,12 @@ fun AppNav() {
         ) { entry ->
             EditorScreen(
                 noteId = entry.arguments?.getLong("noteId") ?: return@composable,
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("settings") {
+            SettingsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )

@@ -8,11 +8,14 @@ A simple, private note app for Android. Notes are stored on your phone and nowhe
 
 ## What it does
 
-- Write notes with a title and a body. Everything autosaves as you type.
-- Group notes into folders when a flat list stops being enough.
-- Pin the notes you keep coming back to.
-- Search across every note from the home screen.
-- Delete with undo, so a slip of the finger costs nothing.
+- Write notes with a title and a body. Everything autosaves as you type, with a quiet tick when your words hit the disk.
+- Type `- ` to start a checklist. Checked items get a line through them, and a fully finished list clears itself.
+- Group notes into folders, pin the ones you keep coming back to, and give notes a color stripe for visual grouping.
+- Search across every note, and sort each list by last edited, newest, or A to Z.
+- Swipe a note away to delete it, with undo. Deleting a folder returns its notes to the main list.
+- Back up every note and folder to a single file you keep wherever you want, and import it on any phone.
+- Lock the whole app or individual folders behind your fingerprint or screen lock, if you choose to in settings.
+- Put a widget on your home screen showing whichever note you pick, or your pinned notes, with a one-tap new note button.
 
 ## What it does not do
 

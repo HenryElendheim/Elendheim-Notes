@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
 data class Folder(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
+    val locked: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -32,11 +33,10 @@ data class Note(
     val title: String = "",
     val body: String = "",
     val pinned: Boolean = false,
+    val color: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
-) {
-    val isEmpty: Boolean get() = title.isBlank() && body.isBlank()
-}
+)
 
 data class FolderWithCount(
     @Embedded val folder: Folder,
