@@ -6,6 +6,11 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, like 1.0. Leave empty for a plain build."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -27,11 +32,15 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Name APK after the version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then VERSION="${GITHUB_SHA::7}"; fi
+          VERSION="${GITHUB_SHA::7}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then VERSION="${GITHUB_REF_NAME#v}"; fi
+          if [ -n "${INPUT_VERSION}" ]; then VERSION="${INPUT_VERSION}"; fi
           cp app/build/outputs/apk/release/app-release.apk "elendheim-notes-${VERSION}.apk"
           echo "APK_NAME=elendheim-notes-${VERSION}.apk" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v${VERSION}" >> "$GITHUB_ENV"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -40,13 +49,14 @@ jobs:
           path: ${{ env.APK_NAME }}
 
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           files: ${{ env.APK_NAME }}
           generate_release_notes: false
           body: |
-            Elendheim Notes ${{ github.ref_name }}
+            Elendheim Notes ${{ env.RELEASE_TAG }}
 
             Download the APK below and install it on any Android 8.0+ phone.
             Notes are stored on your device only; the app has no network permission.
