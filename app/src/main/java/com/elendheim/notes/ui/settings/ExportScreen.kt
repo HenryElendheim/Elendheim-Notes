@@ -1,6 +1,11 @@
 package com.elendheim.notes.ui.settings
 
+import android.content.ContentValues
+import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -48,6 +53,25 @@ import com.elendheim.notes.ui.NotesViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** Writes a file into the public Downloads folder without any picker UI. */
+private fun saveIntoDownloads(context: Context, fileName: String, mime: String, content: String) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        error("this phone has no file dialog and no direct Downloads access")
+    }
+    val values = ContentValues().apply {
+        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+        put(MediaStore.MediaColumns.MIME_TYPE, mime)
+        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+    }
+    val resolver = context.contentResolver
+    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+        ?: error("could not create a file in Downloads")
+    resolver.openOutputStream(uri)?.use { stream ->
+        stream.write(content.toByteArray(Charsets.UTF_8))
+        stream.flush()
+    } ?: error("could not write to Downloads")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,9 +127,46 @@ fun ExportScreen(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri -> writeTo(uri) { viewModel.exportJson(selected) } }
 
-    fun safeLaunch(block: () -> Unit) {
-        runCatching(block).onFailure {
-            scope.launch { snackbar.showSnackbar("No file picker available on this phone") }
+    // Phones without a documents app cannot show the save dialog. Fall back
+    // to writing straight into Downloads, no picker involved.
+    fun saveToDownloads(fileName: String, mime: String, buildContent: suspend () -> String) {
+        scope.launch {
+            val result = runCatching {
+                val content = buildContent()
+                withContext(Dispatchers.IO) {
+                    saveIntoDownloads(context, fileName, mime, content)
+                }
+            }
+            snackbar.showSnackbar(
+                if (result.isSuccess) "Saved to Downloads as $fileName"
+                else "Export failed: ${result.exceptionOrNull()?.message ?: "unknown error"}"
+            )
+        }
+    }
+
+    fun exportWithFallback(
+        launcher: () -> Unit,
+        fileName: String,
+        mime: String,
+        buildContent: suspend () -> String
+    ) {
+        runCatching(launcher).onFailure {
+            saveToDownloads(fileName, mime, buildContent)
+        }
+    }
+
+    fun shareAsText() {
+        scope.launch {
+            runCatching {
+                val content = viewModel.exportText(selected)
+                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_TEXT, content)
+                }
+                context.startActivity(android.content.Intent.createChooser(send, "Share notes"))
+            }.onFailure {
+                snackbar.showSnackbar("Sharing failed: ${it.message ?: "unknown error"}")
+            }
         }
     }
 
@@ -134,7 +195,13 @@ fun ExportScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = { safeLaunch { textLauncher.launch("elendheim-notes.txt") } },
+                    onClick = {
+                        exportWithFallback(
+                            launcher = { textLauncher.launch("elendheim-notes.txt") },
+                            fileName = "elendheim-notes.txt",
+                            mime = "text/plain"
+                        ) { viewModel.exportText(selected) }
+                    },
                     enabled = selected.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
@@ -145,11 +212,24 @@ fun ExportScreen(
                     Text("Save as text file")
                 }
                 OutlinedButton(
-                    onClick = { safeLaunch { backupLauncher.launch("elendheim-notes-backup.json") } },
+                    onClick = {
+                        exportWithFallback(
+                            launcher = { backupLauncher.launch("elendheim-notes-backup.json") },
+                            fileName = "elendheim-notes-backup.json",
+                            mime = "application/json"
+                        ) { viewModel.exportJson(selected) }
+                    },
                     enabled = selected.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Save as backup file (importable)")
+                }
+                TextButton(
+                    onClick = { shareAsText() },
+                    enabled = selected.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Share as text instead")
                 }
             }
         }

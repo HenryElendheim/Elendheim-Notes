@@ -1,5 +1,6 @@
 package com.elendheim.notes.ui.settings
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -57,9 +58,7 @@ fun SettingsScreen(
     val appLock by viewModel.appLock.collectAsStateWithLifecycle()
     val lockAvailable = remember { canUseDeviceLock(context) }
 
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    fun runImport(uri: Uri?) {
         if (uri != null) {
             scope.launch {
                 val result = runCatching {
@@ -86,6 +85,16 @@ fun SettingsScreen(
             }
         }
     }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> runImport(uri) }
+
+    // Fallback for phones without a documents app: the generic content picker,
+    // which any file manager can answer.
+    val importFallbackLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> runImport(uri) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -162,6 +171,8 @@ fun SettingsScreen(
                     importLauncher.launch(
                         arrayOf("application/json", "text/plain", "application/octet-stream")
                     )
+                }.recoverCatching {
+                    importFallbackLauncher.launch("*/*")
                 }.onFailure {
                     scope.launch { snackbar.showSnackbar("No file picker available on this phone") }
                 }
@@ -169,7 +180,7 @@ fun SettingsScreen(
 
             SectionHeader("About")
             Text(
-                text = "Elendheim Notes 2.2",
+                text = "Elendheim Notes 2.3",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
