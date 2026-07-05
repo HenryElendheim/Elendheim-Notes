@@ -4,28 +4,25 @@
 
 # Elendheim Notes
 
-A simple, private note app for Android. Notes are stored on your phone and nowhere else.
+A note app that keeps its mouth shut. Everything you write stays on your phone; the app has no network permission, so your notes cannot leave the device even in theory. No accounts, no sync, no analytics, no ads.
 
-## What it does
+<p align="center">
+  <img src="art/screenshots/home.png" width="260" alt="Home screen with folders and notes">
+  <img src="art/screenshots/checklist.png" width="260" alt="A checklist half checked off">
+  <img src="art/screenshots/actions.png" width="260" alt="Long-press actions on a note">
+</p>
 
-- Write notes with a title and a body. Everything autosaves as you type, with a quiet tick when your words hit the disk.
-- Type `- ` to start a checklist. Checked items get a line through them, and a fully finished list clears itself.
-- Group notes into folders, pin the ones you keep coming back to, and give notes a color stripe for visual grouping.
-- Search across every note, and sort each list by last edited, newest, or A to Z.
-- Swipe a note away to delete it, with undo. Deleting a folder returns its notes to the main list.
-- Back up every note and folder to a single file you keep wherever you want, and import it on any phone.
-- Lock the whole app or individual folders behind your fingerprint or screen lock, if you choose to in settings.
-- Put a widget on your home screen showing whichever note you pick, or your pinned notes, with a one-tap new note button.
+## How it works
 
-## What it does not do
+Tap the plus button and start writing. There is no save button; the app saves as you type and shows a small tick when your words are on disk. Back out of a note you never typed in and it quietly removes itself.
 
-- No accounts, no sync, no cloud.
-- No network permission at all. The app cannot send your notes anywhere, even if it wanted to.
-- No analytics, no tracking, no ads.
+Type `- ` at the start of a line and it turns into a checkbox. Checked items get a line through them and stick around, and once you have checked off every last one, the finished list clears itself. A shopping list that cleans up after the shopping.
 
-## Design
+Long-press anything for its actions: pin a note to the top, move it into a folder, give it a color stripe, or delete it. Swiping a note away deletes it too, with an undo in case your thumb was faster than your brain. Folders keep things grouped, and deleting a folder sends its notes back to the main list instead of taking them down with it.
 
-Dark interface with a soft purple accent. Built with Jetpack Compose and Material 3, storage handled by Room (SQLite). Works on Android 8.0 (API 26) and up.
+In settings you can export every note and folder to a single file, and import it again on any phone. That file is your backup; keep it wherever you trust. You can also lock the app, or individual folders, behind your fingerprint. Locked folders stay out of search results and off the widget.
+
+Speaking of which: there is a home screen widget. When you add it, you pick what it shows, whether that is one specific note or your pinned ones, and it has a plus for starting a new note without opening the app first.
 
 ## Installing
 
@@ -39,7 +36,7 @@ Open the project in Android Studio, or from the command line:
 ./gradlew assembleRelease
 ```
 
-The APK lands in `app/build/outputs/apk/release/`. Every push also builds an APK on GitHub Actions, and version tags publish a release automatically.
+The APK lands in `app/build/outputs/apk/release/`. Every push also builds an APK on GitHub Actions, and running the Build workflow with a version number publishes a release.
 
 The signing key in `signing/` is intentionally public so anyone can build the exact same APK. It is a sideload distribution key, not an app store identity.
 
