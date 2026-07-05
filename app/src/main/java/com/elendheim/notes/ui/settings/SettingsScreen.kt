@@ -47,6 +47,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     viewModel: NotesViewModel,
+    onOpenExport: () -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -55,27 +56,6 @@ fun SettingsScreen(
     val snackbar = remember { SnackbarHostState() }
     val appLock by viewModel.appLock.collectAsStateWithLifecycle()
     val lockAvailable = remember { canUseDeviceLock(context) }
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                val result = runCatching {
-                    val json = viewModel.exportJson()
-                    withContext(Dispatchers.IO) {
-                        context.contentResolver.openOutputStream(uri)?.use { stream ->
-                            stream.write(json.toByteArray(Charsets.UTF_8))
-                        } ?: error("Could not open the file")
-                    }
-                }
-                snackbar.showSnackbar(
-                    if (result.isSuccess) "Backup saved"
-                    else "Export failed: ${result.exceptionOrNull()?.message}"
-                )
-            }
-        }
-    }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -170,20 +150,26 @@ fun SettingsScreen(
             SectionHeader("Backup")
             SettingsAction(
                 title = "Export notes",
-                caption = "Saves every note and folder to one file you keep wherever you want"
+                caption = "Pick which notes to save as a text file or an importable backup"
             ) {
-                exportLauncher.launch("elendheim-notes-backup.json")
+                onOpenExport()
             }
             SettingsAction(
                 title = "Import notes",
                 caption = "Adds notes from a backup file; duplicates are skipped"
             ) {
-                importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                runCatching {
+                    importLauncher.launch(
+                        arrayOf("application/json", "text/plain", "application/octet-stream")
+                    )
+                }.onFailure {
+                    scope.launch { snackbar.showSnackbar("No file picker available on this phone") }
+                }
             }
 
             SectionHeader("About")
             Text(
-                text = "Elendheim Notes 2.1",
+                text = "Elendheim Notes 2.2",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(vertical = 4.dp)
             )

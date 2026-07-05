@@ -135,7 +135,13 @@ class NotesViewModel(
         viewModelScope.launch { repo.deleteFolder(id) }
     }
 
-    suspend fun exportJson(): String = backup.exportJson()
+    suspend fun exportJson(noteIds: Collection<Long>? = null): String = backup.exportJson(noteIds)
+
+    suspend fun exportText(noteIds: Collection<Long>? = null): String = backup.exportText(noteIds)
+
+    suspend fun allNotesForExport(): List<Note> = repo.allNotes()
+
+    suspend fun allFoldersForExport(): List<Folder> = repo.allFolders()
 
     suspend fun importJson(text: String): ImportResult = backup.importJson(text)
 

@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.elendheim.notes.ui.editor.EditorScreen
 import com.elendheim.notes.ui.home.FolderScreen
 import com.elendheim.notes.ui.home.HomeScreen
+import com.elendheim.notes.ui.settings.ExportScreen
 import com.elendheim.notes.ui.settings.SettingsScreen
 
 @Composable
@@ -76,6 +77,13 @@ fun AppNav(
         }
         composable("settings") {
             SettingsScreen(
+                viewModel = viewModel,
+                onOpenExport = { navController.navigate("export") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("export") {
+            ExportScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )

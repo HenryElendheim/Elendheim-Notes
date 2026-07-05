@@ -8,14 +8,24 @@ data class ImportResult(val notesAdded: Int, val notesSkipped: Int, val foldersA
 // Everything in one plain JSON file the owner keeps wherever they like.
 class BackupManager(private val repo: NotesRepository) {
 
-    suspend fun exportJson(): String {
+    /** Notes to export: all of them, or only the chosen ids. */
+    private suspend fun pickNotes(noteIds: Collection<Long>?): List<Note> {
+        val all = repo.allNotes()
+        return if (noteIds == null) all else all.filter { it.id in noteIds }
+    }
+
+    suspend fun exportJson(noteIds: Collection<Long>? = null): String {
+        val notes = pickNotes(noteIds)
+        val usedFolderIds = notes.mapNotNull { it.folderId }.toSet()
+        val folders = repo.allFolders().filter { noteIds == null || it.id in usedFolderIds }
+
         val root = JSONObject()
         root.put("format", "elendheim-notes")
         root.put("version", 1)
         root.put("exportedAt", System.currentTimeMillis())
 
         val folderArray = JSONArray()
-        for (folder in repo.allFolders()) {
+        for (folder in folders) {
             folderArray.put(
                 JSONObject()
                     .put("id", folder.id)
@@ -27,7 +37,7 @@ class BackupManager(private val repo: NotesRepository) {
         root.put("folders", folderArray)
 
         val noteArray = JSONArray()
-        for (note in repo.allNotes()) {
+        for (note in notes) {
             noteArray.put(
                 JSONObject()
                     .put("folderId", note.folderId ?: JSONObject.NULL)
@@ -41,6 +51,30 @@ class BackupManager(private val repo: NotesRepository) {
         }
         root.put("notes", noteArray)
         return root.toString(2)
+    }
+
+    /** Plain readable text: for eyes, not for importing back. */
+    suspend fun exportText(noteIds: Collection<Long>? = null): String {
+        val notes = pickNotes(noteIds)
+        val folderNames = repo.allFolders().associateBy({ it.id }, { it.name })
+
+        return buildString {
+            notes.forEachIndexed { index, note ->
+                if (index > 0) append("\n\n----------------------------------------\n\n")
+                append(note.title.ifBlank { "Untitled" })
+                note.folderId?.let { folderNames[it] }?.let { append("  (").append(it).append(")") }
+                append("\n\n")
+                for (line in parseBody(note.body)) {
+                    when (line.checked) {
+                        null -> append(line.text)
+                        false -> append("[ ] ").append(line.text)
+                        true -> append("[x] ").append(line.text)
+                    }
+                    append("\n")
+                }
+            }
+            if (isNotEmpty()) append("\n")
+        }
     }
 
     suspend fun importJson(text: String): ImportResult {

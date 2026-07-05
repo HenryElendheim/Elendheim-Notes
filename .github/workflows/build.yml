@@ -56,7 +56,6 @@ jobs:
           files: ${{ env.APK_NAME }}
           generate_release_notes: false
           body: |
-            Elendheim Notes ${{ env.RELEASE_TAG }}
+            Elendheim Notes is a private note app for Android. It keeps notes and checklists organized in folders, backs everything up to a single file when you ask, and stores it all on your phone only.
 
-            Download the APK below and install it on any Android 8.0+ phone.
-            Notes are stored on your device only; the app has no network permission.
+            Download the APK below and install it on any Android 8.0 or newer phone.
