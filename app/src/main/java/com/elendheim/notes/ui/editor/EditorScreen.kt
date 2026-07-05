@@ -1,6 +1,6 @@
 package com.elendheim.notes.ui.editor
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -196,14 +196,16 @@ fun EditorScreen(
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 decorationBox = { inner ->
-                    if (title.isEmpty()) {
-                        Text(
-                            "Title",
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Box {
+                        if (title.isEmpty()) {
+                            Text(
+                                "Title",
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        inner()
                     }
-                    inner()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -217,14 +219,16 @@ fun EditorScreen(
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 decorationBox = { inner ->
-                    if (body.isEmpty()) {
-                        Text(
-                            "Start writing",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Box {
+                        if (body.isEmpty()) {
+                            Text(
+                                "Start writing",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        inner()
                     }
-                    inner()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
