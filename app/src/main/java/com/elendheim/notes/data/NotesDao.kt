@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -28,8 +28,10 @@ interface NotesDao {
     @Insert
     suspend fun insert(note: Note): Long
 
-    @Update
-    suspend fun update(note: Note)
+    // Upsert, not update: a save must land even if the row went missing,
+    // otherwise edits can be silently dropped.
+    @Upsert
+    suspend fun upsert(note: Note)
 
     @Delete
     suspend fun delete(note: Note)

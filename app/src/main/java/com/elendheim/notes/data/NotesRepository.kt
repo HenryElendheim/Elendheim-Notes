@@ -13,7 +13,7 @@ class NotesRepository(private val db: NotesDatabase) {
     suspend fun noteById(id: Long): Note? = notes.noteById(id)
 
     suspend fun createNote(folderId: Long?): Long = notes.insert(Note(folderId = folderId))
-    suspend fun updateNote(note: Note) = notes.update(note)
+    suspend fun updateNote(note: Note) = notes.upsert(note)
     suspend fun deleteNote(note: Note) = notes.delete(note)
     suspend fun deleteNoteById(id: Long) = notes.deleteById(id)
 

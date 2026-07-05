@@ -28,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -104,21 +103,22 @@ fun EditorScreen(
             }
     }
 
-    // Final save on leave; silently discard notes that are still empty.
-    val latestState by rememberUpdatedState(Triple(title, body, deleted))
-    DisposableEffect(loaded) {
+    // Final save when the screen actually goes away. Keyed on Unit so it can
+    // never fire mid-session (a DisposableEffect keyed on the note used to run
+    // its cleanup the moment the note finished loading, deleting fresh notes).
+    // All the vars read here are snapshot state, so the values are current.
+    DisposableEffect(Unit) {
         onDispose {
             val base = loaded ?: return@onDispose
-            val (t, b, wasDeleted) = latestState
-            if (wasDeleted) return@onDispose
+            if (deleted) return@onDispose
             runBlocking(Dispatchers.IO) {
-                if (t.isBlank() && b.isBlank()) {
+                if (title.isBlank() && body.isBlank()) {
                     viewModel.deleteNoteNow(base.id)
                 } else {
                     viewModel.saveNoteNow(
                         base.copy(
-                            title = t,
-                            body = b,
+                            title = title,
+                            body = body,
                             pinned = pinned,
                             folderId = folderId,
                             updatedAt = System.currentTimeMillis()
