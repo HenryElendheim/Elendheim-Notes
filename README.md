@@ -24,16 +24,22 @@ A simple, private note app for Android. Notes are stored on your phone and nowhe
 
 Dark interface with a soft purple accent. Built with Jetpack Compose and Material 3, storage handled by Room (SQLite). Works on Android 8.0 (API 26) and up.
 
+## Installing
+
+Grab the APK from the [latest release](../../releases/latest) and install it on any Android 8.0+ phone.
+
 ## Building
 
 Open the project in Android Studio, or from the command line:
 
 ```
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
-The APK lands in `app/build/outputs/apk/debug/`. Every push also builds an APK on GitHub Actions; grab it from the workflow run's artifacts.
+The APK lands in `app/build/outputs/apk/release/`. Every push also builds an APK on GitHub Actions, and version tags publish a release automatically.
+
+The signing key in `signing/` is intentionally public so anyone can build the exact same APK. It is a sideload distribution key, not an app store identity.
 
 ## License
 
-MIT
+[MIT](LICENSE)

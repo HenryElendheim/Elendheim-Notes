@@ -17,14 +17,23 @@ android {
         versionName = "1.0"
     }
 
+    signingConfigs {
+        // Sideload distribution key. It lives in the repo so anyone can build
+        // the same APK; publishing to an app store would need a private key.
+        create("release") {
+            storeFile = rootProject.file("signing/release.keystore")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "elendheim-notes"
+            keyAlias = "elendheim"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: "elendheim-notes"
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            // Shrinking stays off until the app has been exercised on a real
+            // device; a reliable first release beats a smaller one.
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
