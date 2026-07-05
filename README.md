@@ -16,7 +16,7 @@ A note app that keeps its mouth shut. Everything you write stays on your phone; 
 
 Tap the plus button and start writing. There is no save button; the app saves as you type and shows a small tick when your words are on disk. Back out of a note you never typed in and it quietly removes itself.
 
-Type `- ` at the start of a line and it turns into a checkbox. Checked items get a line through them and stick around, and once you have checked off every last one, the finished list clears itself. A shopping list that cleans up after the shopping.
+Type `-` at the start of a line and it turns into a checkbox. Checked items get a line through them and stick around, and once you have checked off every last one, the finished list clears itself. A shopping list that cleans up after the shopping.
 
 Long-press anything for its actions: pin a note to the top, move it into a folder, give it a color stripe, or delete it. Swiping a note away deletes it too, with an undo in case your thumb was faster than your brain. Folders keep things grouped, and deleting a folder sends its notes back to the main list instead of taking them down with it.
 
